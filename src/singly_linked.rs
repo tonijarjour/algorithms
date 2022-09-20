@@ -111,7 +111,7 @@ impl<T: std::fmt::Debug> List<T> {
         } else if index == self.size - 1 {
             // new reference to the first element in the list
             let mut current = Rc::clone(self.head.as_ref().unwrap());
-            // find the second to last element
+            // find the second to last element, to be set as new tail
             for _ in 0..self.size - 2 {
                 let next = Rc::clone(current.borrow().next.as_ref().unwrap());
                 current = next;
@@ -119,14 +119,13 @@ impl<T: std::fmt::Debug> List<T> {
             // set its next value to none
             current.borrow_mut().next = None;
 
-            // take the tail and retrieve the value it holds
+            // take the value in the tail to be dropped
             let hold_tail = std::mem::replace(&mut self.tail, None);
             return_val = Ok(Rc::try_unwrap(hold_tail.unwrap())
                 .unwrap()
                 .into_inner()
                 .value);
 
-            // set it as the tail
             self.tail = Some(current);
         }
 
