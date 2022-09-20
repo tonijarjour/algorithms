@@ -1,21 +1,22 @@
 use std::rc::Rc;
+use std::cell::RefCell;
 
 #[derive(Debug)]
 struct Node<T: std::fmt::Debug> {
     value: T,
-    next: Option<Rc<Node<T>>>,
+    next: Option<Rc<RefCell<Node<T>>>>,
 }
 
 impl<T: std::fmt::Debug> Node<T> {
-    fn new(value: T, next: Option<Rc<Node<T>>>) -> Self {
+    fn new(value: T, next: Option<Rc<RefCell<Node<T>>>>) -> Self {
         Self { value, next }
     }
 }
 
 #[derive(Debug)]
 pub struct List<T: std::fmt::Debug> {
-    head: Option<Rc<Node<T>>>,
-    tail: Option<Rc<Node<T>>>,
+    head: Option<Rc<RefCell<Node<T>>>>,
+    tail: Option<Rc<RefCell<Node<T>>>>,
     size: usize,
 }
 
@@ -31,14 +32,14 @@ impl<T: std::fmt::Debug> List<T> {
     pub fn insert(&mut self, index: usize, value: T) {
         if index == 0 {
             if let None = self.head {
-                self.head = Some(Rc::new(Node::new(value, None)));
+                self.head = Some(Rc::new(RefCell::new(Node::new(value, None))));
                 self.tail = Some(Rc::clone(self.head.as_ref().unwrap()));
             } else {
                 let old_head = std::mem::replace(&mut self.head, None);
-                self.head = Some(Rc::new(Node::new(value, old_head)));
+                self.head = Some(Rc::new(RefCell::new(Node::new(value, old_head))));
             }
         } else if index == self.size {
-            let node = Some(Rc::new(Node::new(value, None)));
+            let node = Some(Rc::new(RefCell::new(Node::new(value, None))));
             let old_tail = std::mem::replace(&mut self.tail, None);
         }
         self.size += 1;
