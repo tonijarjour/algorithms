@@ -1,12 +1,22 @@
 use std::cell::RefCell;
 use std::cmp::PartialEq;
 use std::fmt::{Display, Formatter};
-use std::rc::Rc;
 use std::mem;
+use std::rc::Rc;
 
 pub struct Node<T: PartialEq + Display> {
     pub value: T,
     next: Option<Rc<RefCell<Node<T>>>>,
+}
+
+pub struct List<T: PartialEq + Display> {
+    head: Option<Rc<RefCell<Node<T>>>>,
+    tail: Option<Rc<RefCell<Node<T>>>>,
+    size: usize,
+}
+
+pub struct ListIter<T: PartialEq + Display> {
+    curr: Option<Rc<RefCell<Node<T>>>>,
 }
 
 impl<T: PartialEq + Display> Node<T> {
@@ -19,12 +29,6 @@ impl<T: PartialEq + Display> Display for Node<T> {
     fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
         write!(f, "{}", self.value)
     }
-}
-
-pub struct List<T: PartialEq + Display> {
-    head: Option<Rc<RefCell<Node<T>>>>,
-    tail: Option<Rc<RefCell<Node<T>>>>,
-    size: usize,
 }
 
 impl<T: PartialEq + Display> List<T> {
@@ -192,5 +196,45 @@ impl<T: PartialEq + Display> List<T> {
         }
 
         Ok(current)
+    }
+
+    pub fn iter(&self) -> ListIter<T> {
+        ListIter {
+            curr: Some(Rc::clone(self.head.as_ref().unwrap())),
+        }
+    }
+}
+
+impl<T: PartialEq + Display> IntoIterator for List<T> {
+    type Item = Rc<RefCell<Node<T>>>;
+    type IntoIter = ListIter<T>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter()
+    }
+}
+
+impl<T: PartialEq + Display> Iterator for ListIter<T> {
+    type Item = Rc<RefCell<Node<T>>>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        // reference to the current node; return early if None
+        let return_val = if let Some(n) = self.curr.as_ref() {
+            Some(Rc::clone(n))
+        } else {
+            return None;
+        };
+
+        // get a reference to the next node
+        let next_node =
+            if let Some(n) = &self.curr.as_ref().unwrap().borrow().next {
+                Some(Rc::clone(n))
+            } else {
+                None
+            };
+
+        self.curr = next_node;
+
+        return_val
     }
 }

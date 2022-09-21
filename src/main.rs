@@ -9,8 +9,10 @@ fn main() {
     list.push(5).unwrap();
     list.push(6).unwrap();
 
-    list.get(5).unwrap().borrow_mut().value = 13;
-    println!("{}", list.get(2).unwrap().borrow());
-    println!("{}", list.get(4).unwrap().borrow());
-    println!("{}", list.get(5).unwrap().borrow());
+    for (i, n) in list.iter().enumerate() {
+        println!("{} {i}", n.borrow());
+    }
+    for n in list {
+        println!("{}", n.borrow());
+    }
 }
