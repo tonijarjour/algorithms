@@ -1,26 +1,33 @@
 use std::cell::RefCell;
+use std::cmp::PartialEq;
+use std::fmt::{Display, Formatter};
 use std::rc::Rc;
+use std::mem;
 
-#[derive(Debug)]
-struct Node<T: std::fmt::Debug> {
-    value: T,
+pub struct Node<T: PartialEq + Display> {
+    pub value: T,
     next: Option<Rc<RefCell<Node<T>>>>,
 }
 
-impl<T: std::fmt::Debug> Node<T> {
+impl<T: PartialEq + Display> Node<T> {
     fn new(value: T, next: Option<Rc<RefCell<Node<T>>>>) -> Self {
         Self { value, next }
     }
 }
 
-#[derive(Debug)]
-pub struct List<T: std::fmt::Debug> {
+impl<T: PartialEq + Display> Display for Node<T> {
+    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
+        write!(f, "{}", self.value)
+    }
+}
+
+pub struct List<T: PartialEq + Display> {
     head: Option<Rc<RefCell<Node<T>>>>,
     tail: Option<Rc<RefCell<Node<T>>>>,
     size: usize,
 }
 
-impl<T: std::fmt::Debug> List<T> {
+impl<T: PartialEq + Display> List<T> {
     pub fn new() -> Self {
         Self {
             head: None,
@@ -40,7 +47,7 @@ impl<T: std::fmt::Debug> List<T> {
                 self.tail = Some(Rc::clone(self.head.as_ref().unwrap()));
             } else {
                 // retrieve the old head, replacing it with a new node
-                let old_head = std::mem::replace(
+                let old_head = mem::replace(
                     &mut self.head,
                     Some(Rc::new(RefCell::new(Node::new(value, None)))),
                 );
@@ -92,7 +99,7 @@ impl<T: std::fmt::Debug> List<T> {
 
         if index == 0 {
             // take the head's next, to be set as new head
-            let new_head = std::mem::replace(
+            let new_head = mem::replace(
                 &mut self.head.as_ref().unwrap().borrow_mut().next,
                 None,
             );
@@ -104,11 +111,13 @@ impl<T: std::fmt::Debug> List<T> {
             }
 
             // take the value in the head to be dropped
-            let hold_head = std::mem::replace(&mut self.head, None);
-            return_val = Ok(Rc::try_unwrap(hold_head.unwrap())
-                .unwrap()
-                .into_inner()
-                .value);
+            let hold_head = mem::replace(&mut self.head, None);
+            return_val =
+                Ok(if let Ok(n) = Rc::try_unwrap(hold_head.unwrap()) {
+                    n.into_inner().value
+                } else {
+                    unreachable!()
+                });
 
             self.head = new_head;
         } else if index == self.size - 1 {
@@ -123,11 +132,13 @@ impl<T: std::fmt::Debug> List<T> {
             current.borrow_mut().next = None;
 
             // take the value in the tail to be dropped
-            let hold_tail = std::mem::replace(&mut self.tail, None);
-            return_val = Ok(Rc::try_unwrap(hold_tail.unwrap())
-                .unwrap()
-                .into_inner()
-                .value);
+            let hold_tail = mem::replace(&mut self.tail, None);
+            return_val =
+                Ok(if let Ok(n) = Rc::try_unwrap(hold_tail.unwrap()) {
+                    n.into_inner().value
+                } else {
+                    unreachable!()
+                });
 
             self.tail = Some(current);
         }
@@ -147,7 +158,39 @@ impl<T: std::fmt::Debug> List<T> {
         Self::remove(self, 0)
     }
 
-    pub fn position(&self, value: T) {}
+    pub fn position(&self, value: T) -> Option<usize> {
+        // reference to first node
+        let mut current = Rc::clone(self.head.as_ref().unwrap());
 
-    pub fn get(&self, index: usize) {}
+        // loop through the nodes looking for a match
+        for n in 0..self.size {
+            if value == current.borrow().value {
+                return Some(n);
+            }
+            let next = Rc::clone(current.borrow().next.as_ref().unwrap());
+            current = next;
+        }
+
+        None
+    }
+
+    pub fn get(&self, index: usize) -> Result<Rc<RefCell<Node<T>>>, String> {
+        if index >= self.size {
+            return Err(format!(
+                "index out of bounds: the length is {} but the index is {}",
+                self.size, index
+            ));
+        }
+
+        // reference to first node
+        let mut current = Rc::clone(self.head.as_ref().unwrap());
+
+        // loop to the node at given index
+        for _ in 1..=index {
+            let next = Rc::clone(current.borrow().next.as_ref().unwrap());
+            current = next;
+        }
+
+        Ok(current)
+    }
 }
