@@ -29,7 +29,7 @@ impl<T: std::fmt::Debug> List<T> {
         }
     }
 
-    pub fn insert(&mut self, index: usize, value: T) -> Result<(), &str> {
+    pub fn insert(&mut self, index: usize, value: T) -> Result<(), String> {
         let mut inserted = false;
 
         if index == 0 {
@@ -47,6 +47,7 @@ impl<T: std::fmt::Debug> List<T> {
                 // have the new head point to the old head
                 self.head.as_ref().unwrap().borrow_mut().next = old_head;
             }
+
             inserted = true;
         } else if index == self.size {
             // set the old tail to point to a new node
@@ -58,21 +59,23 @@ impl<T: std::fmt::Debug> List<T> {
             ));
             // set the tail to that reference
             self.tail = new_tail;
+
             inserted = true;
         }
+
         if inserted {
             self.size += 1;
             return Ok(());
         }
 
-        Err("insertion failed")
+        Err(format!("failed to insert at {}", index))
     }
 
-    pub fn push(&mut self, value: T) -> Result<(), &str> {
+    pub fn push(&mut self, value: T) -> Result<(), String> {
         Self::insert(self, self.size, value)
     }
 
-    pub fn enq(&mut self, value: T) -> Result<(), &str> {
+    pub fn enq(&mut self, value: T) -> Result<(), String> {
         Self::insert(self, 0, value)
     }
 
@@ -88,7 +91,7 @@ impl<T: std::fmt::Debug> List<T> {
         let mut return_val = Err(format!("failed to remove at {}", index));
 
         if index == 0 {
-            // take the head's next, set it as head at the end of this if
+            // take the head's next, to be set as new head
             let new_head = std::mem::replace(
                 &mut self.head.as_ref().unwrap().borrow_mut().next,
                 None,
