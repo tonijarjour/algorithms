@@ -41,7 +41,12 @@ impl<T: PartialEq + Display> List<T> {
     }
 
     pub fn insert(&mut self, index: usize, value: T) -> Result<(), String> {
-        let mut inserted = false;
+        if index > self.size {
+            return Err(format!(
+                "failed to insert {value} at {index}: index must be <= len {}",
+                self.size
+            ));
+        }
 
         if index == 0 {
             if let None = self.head {
@@ -60,8 +65,6 @@ impl<T: PartialEq + Display> List<T> {
                 // have the new head point to the old head
                 self.head.as_ref().unwrap().borrow_mut().next = old_head;
             }
-
-            inserted = true;
         } else if index == self.size {
             // set the old tail to point to a new node
             self.tail.as_ref().unwrap().borrow_mut().next =
@@ -74,8 +77,6 @@ impl<T: PartialEq + Display> List<T> {
 
             // tail references the new node
             self.tail = new_tail;
-
-            inserted = true;
         } else {
             // start on head
             let mut current = Rc::clone(self.head.as_ref().unwrap());
@@ -96,16 +97,10 @@ impl<T: PartialEq + Display> List<T> {
 
             // move the new node into the list
             current.borrow_mut().next = new_node;
-
-            inserted = true;
         }
 
-        if inserted {
-            self.size += 1;
-            return Ok(());
-        }
-
-        Err(format!("failed to insert at {}", index))
+        self.size += 1;
+        Ok(())
     }
 
     pub fn push(&mut self, value: T) -> Result<(), String> {
@@ -122,10 +117,13 @@ impl<T: PartialEq + Display> List<T> {
         }
 
         if index >= self.size {
-            return Err("index out of bounds".to_string());
+            return Err(format!(
+                "index out of bounds: the length is {} but the index is {}",
+                self.size, index
+            ));
         }
 
-        let mut return_val = Err(format!("failed to remove at {}", index));
+        let return_val;
 
         if index == 0 {
             // take the head's next, to be set as new head
