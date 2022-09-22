@@ -47,6 +47,7 @@ impl<T: PartialEq + Display> List<T> {
             if let None = self.head {
                 // set head to a new node
                 self.head = Some(Rc::new(RefCell::new(Node::new(value, None))));
+
                 // tail references the same node
                 self.tail = Some(Rc::clone(self.head.as_ref().unwrap()));
             } else {
@@ -55,6 +56,7 @@ impl<T: PartialEq + Display> List<T> {
                     &mut self.head,
                     Some(Rc::new(RefCell::new(Node::new(value, None)))),
                 );
+
                 // have the new head point to the old head
                 self.head.as_ref().unwrap().borrow_mut().next = old_head;
             }
@@ -64,12 +66,36 @@ impl<T: PartialEq + Display> List<T> {
             // set the old tail to point to a new node
             self.tail.as_ref().unwrap().borrow_mut().next =
                 Some(Rc::new(RefCell::new(Node::new(value, None))));
+
             // create a another reference to that node
             let new_tail = Some(Rc::clone(
                 &self.tail.as_ref().unwrap().borrow().next.as_ref().unwrap(),
             ));
-            // set the tail to that reference
+
+            // tail references the new node
             self.tail = new_tail;
+
+            inserted = true;
+        } else {
+            // start on head
+            let mut current = Rc::clone(self.head.as_ref().unwrap());
+
+            // loop to node before given index
+            for _ in 1..index {
+                let next = Rc::clone(current.borrow().next.as_ref().unwrap());
+                current = next;
+            }
+
+            // create a reference to the node's next
+            let next_node =
+                Some(Rc::clone(current.borrow().next.as_ref().unwrap()));
+
+            // make new node, have it point to the next
+            let new_node =
+                Some(Rc::new(RefCell::new(Node::new(value, next_node))));
+
+            // move the new node into the list
+            current.borrow_mut().next = new_node;
 
             inserted = true;
         }
@@ -137,14 +163,46 @@ impl<T: PartialEq + Display> List<T> {
 
             // take the value in the tail to be dropped
             let hold_tail = mem::replace(&mut self.tail, None);
-            return_val =
-                Ok(if let Ok(n) = Rc::try_unwrap(hold_tail.unwrap()) {
-                    n.into_inner().value
-                } else {
-                    unreachable!()
-                });
+            return_val = if let Ok(n) = Rc::try_unwrap(hold_tail.unwrap()) {
+                Ok(n.into_inner().value)
+            } else {
+                unreachable!()
+            };
 
             self.tail = Some(current);
+        } else {
+            // start on head
+            let mut current = Rc::clone(self.head.as_ref().unwrap());
+
+            // loop to the node before given index
+            for _ in 1..index {
+                let next = Rc::clone(current.borrow().next.as_ref().unwrap());
+                current = next;
+            }
+
+            // get a reference to the node after the next node
+            let next_node = Rc::clone(
+                current
+                    .borrow()
+                    .next
+                    .as_ref()
+                    .unwrap()
+                    .borrow()
+                    .next
+                    .as_ref()
+                    .unwrap(),
+            );
+
+            // take the value of the node to be dropped
+            let hold_node = mem::replace(&mut current.borrow_mut().next, None);
+            return_val = if let Ok(n) = Rc::try_unwrap(hold_node.unwrap()) {
+                Ok(n.into_inner().value)
+            } else {
+                unreachable!()
+            };
+
+            // have the current node point to the new next
+            current.borrow_mut().next = Some(next_node);
         }
 
         if let Ok(_) = return_val {
