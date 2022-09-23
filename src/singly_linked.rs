@@ -140,12 +140,11 @@ impl<T: PartialEq + Display> List<T> {
 
             // take the value in the head to be dropped
             let hold_head = mem::replace(&mut self.head, None);
-            return_val =
-                Ok(if let Ok(n) = Rc::try_unwrap(hold_head.unwrap()) {
-                    n.into_inner().value
-                } else {
-                    unreachable!()
-                });
+            return_val = if let Ok(n) = Rc::try_unwrap(hold_head.unwrap()) {
+                Ok(n.into_inner().value)
+            } else {
+                unreachable!()
+            };
 
             self.head = new_head;
         } else if index == self.size - 1 {
