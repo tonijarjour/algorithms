@@ -25,6 +25,7 @@ mod data_structures {
         assert_eq!(list_contents, "1 2 3");
         assert_eq!(list.position(2).unwrap(), 1);
         assert_eq!(list.get(1).unwrap().borrow().value, 2);
+        assert_eq!(list.len(), 3);
 
         assert_eq!(list.remove(1).unwrap(), 2);
         assert_eq!(list.deq().unwrap(), 1);

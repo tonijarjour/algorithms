@@ -150,8 +150,8 @@ impl<T: PartialEq + Display> List<T> {
         } else if index == self.size - 1 {
             // new reference to the first element in the list
             let mut current = Rc::clone(self.head.as_ref().unwrap());
-            // find the second to last element, to be set as new tail
-            for _ in 0..self.size - 2 {
+            // find the penultimate node, to be set as new tail
+            for _ in 1..self.size - 1 {
                 let next = Rc::clone(current.borrow().next.as_ref().unwrap());
                 current = next;
             }
@@ -257,6 +257,10 @@ impl<T: PartialEq + Display> List<T> {
         ListIter {
             curr: Some(Rc::clone(self.head.as_ref().unwrap())),
         }
+    }
+
+    pub fn len(&self) -> usize {
+        self.size
     }
 }
 
